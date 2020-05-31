@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    int i;
     double suma=0;
     double promedio=0;
     for(int i=0; i<TOPEPRUEBAS; i++){
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
         }
         
         gettimeofday(&tf,NULL);
-        tiempo = ((tf.tv_sec - ti.tv_sec)*1000000) + (tf.tv_usec - ti.tv_usec);
+        tiempo = ((tf.tv_sec*1000000)+tf.tv_usec) - ((ti.tv_sec*1000000) + ti.tv_usec);
         printf("tiempo %g us en recibir %d bytes: \n",tiempo,sizeof(buf));
 
         suma = suma + tiempo;

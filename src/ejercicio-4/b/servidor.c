@@ -12,7 +12,7 @@
 #define MYPORT 14550 /*Nro de puerto donde se conectaran los clientes, recomienda poner despues del 10000, gralmente antes estan reservados para distintas funciones*/
 #define BACKLOG 10 /* Tamaño de la cola de conexiones recibidas */
 #define BYTESAENVIAR 2048
-main() {
+int main() {
     int sockfd; /* El servidor escuchara por sockfd */
     int newfd; /* las transferencias de datos se realizar mediante newfd */
     struct sockaddr_in my_addr; /* contendrá la dir IP y el nro de puerto local */
@@ -71,8 +71,5 @@ main() {
             exit(0);
         }
     }
-close(newfd);
-/* Se suspende la ejecucion del proceso padre hasta que finalice el proceso hijo */
-while(waitpid(-1,NULL,WNOHANG) > 0);
-/* Una vez finalizado el proceso hijo, se vuelve a llamar a accept() */
+    return 0;
 }
