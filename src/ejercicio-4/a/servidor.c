@@ -58,12 +58,13 @@ int main() {
         
         if (!fork())
         { /* Comienza el proceso hijo, enviamos los datos mediante newfd */
-            if (send(newfd, "###\n",4, 0) == -1)
+            if (send(newfd, "####",4, 0) == -1)
                 perror("send");
             close(newfd);
             exit(0);
         }
     }
+    close(sockfd);
     return 0;
 
 }

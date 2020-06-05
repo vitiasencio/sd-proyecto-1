@@ -66,17 +66,16 @@ int main(int argc, char *argv[])
             perror("recv");
             exit(1);
         }
-        
         gettimeofday(&tf,NULL);
         tiempo = ((tf.tv_sec*1000000)+tf.tv_usec) - ((ti.tv_sec*1000000) + ti.tv_usec);
-        printf("tiempo %g us en recibir %d bytes: \n",tiempo,sizeof(buf));
+        printf("tiempo: %g us en recibir %d bytes.\n",tiempo,sizeof(buf));
 
         suma = suma + tiempo;
     }
     promedio = suma/TOPEPRUEBAS;
     /* Visualizamos lo recibido */
     buf[numbytes] = '\0';
-    printf("Demora en promedio %g us en recibir %d bytes: \n",promedio,sizeof(buf));
+    printf("Demora en promedio %g us en recibir %d bytes\n",promedio,sizeof(buf));
     
     /* Devolvemos recursos al sistema */
     close(sockfd);

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     promedio = suma/TOPEPRUEBAS;
     /* Visualizamos lo recibido */
     buf[numbytes] = '\0';
-    printf("Demora en promedio %g us en recibir %d bytes: \n",promedio,sizeof(buf));
+    printf("Demora en promedio %g us en recibir %d bytes: \n",promedio,numbytes);
     
     /* Devolvemos recursos al sistema */
     close(sockfd);

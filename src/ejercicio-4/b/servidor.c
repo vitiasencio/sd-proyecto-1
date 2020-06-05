@@ -22,8 +22,8 @@ int main() {
     char message[BYTESAENVIAR];
     int i;
     //simula un mensaje de 2048 bytes.
-    for(i=1; i<BYTESAENVIAR; i++){
-        message[i]='#';
+    for(i=0; i<BYTESAENVIAR; i++){
+        message[i]='C';
     }
     /****se crea el socket*****/
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
@@ -71,5 +71,6 @@ int main() {
             exit(0);
         }
     }
+    close(sockfd);
     return 0;
 }
