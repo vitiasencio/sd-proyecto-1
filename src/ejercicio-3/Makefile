@@ -3,7 +3,7 @@
 .PHONY : clean
 
 all : client server
-raspberry : cliente_r servidor_r
+raspberry : client_r server_r
 
 array_clnt.c array_svc.c array_xdr.c array.h: array.x
 	rpcgen -C array.x
@@ -24,5 +24,5 @@ clean :
 	rm client; rm server; rm array_clnt.c; rm array_svc.c; rm array_xdr.c; rm array.h;
 
 clean_r :
-	rm cliente_r; rm servidor_r; rm array_clnt.c; rm array_svc.c;  rm array_xdr.c; rm array.h;
+	rm client_r; rm server_r; rm array_clnt.c; rm array_svc.c;  rm array_xdr.c; rm array.h;
 
