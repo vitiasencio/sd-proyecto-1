@@ -43,9 +43,10 @@ void turno_inscripcion_bebe_nacido(int newfd){
     tiempo = tiempo + 86400;
     struct tm *result;
     result = localtime(&tiempo);
-    char mensaje1[100]  = "Usted tiene un turno para inscribir a su bebe recien nacido el dia : ";
+    char mensaje1[400]  = "Usted tiene un turno para inscribir a su bebe recien nacido el dia : ";
     strcat(mensaje1,asctime(result));
     strcat(mensaje1,"\n");
+    strcat(mensaje1,"consulte: https://www.gba.gob.ar/registrodelaspersonas/otros_tramites/inscripcion_de_nacimiento_hasta_60_dias para saber la informacion a presentar \n");
     printf("%s",mensaje1);
 
     if(send(newfd,mensaje1,sizeof(mensaje1),0)==-1){
