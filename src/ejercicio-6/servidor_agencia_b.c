@@ -1,5 +1,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
@@ -7,12 +8,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/utsname.h>
+#include <netdb.h>
 
-#define MYPORT 14550 /*Nro de puerto donde se conectaran los clientes*/
-#define PAR_PORT 14551 /*Nro de puerto donde se conectaran como cliente el agente B*/
+#define MYPORT 14551 /*Nro de puerto donde se conectaran los clientes*/
+#define PORT_A_C 14551 /*Nro de puerto donde se conectaran como cliente al agente A*/
 #define BACKLOG 10 /* Tamaño de la cola de conexiones recibidas */
-#define BYTESAENVIAR 2048
 
 void brindar_turno_patentar_auto(int newfd){
     time_t tiempo;
@@ -55,7 +55,7 @@ void brindar_turno_transferencia_vehiculo(int newfd){
     }
 }
 
-int main() {
+int main(int argc, char *argv[]){
     
     /*-----Variables como servidor-----*/
     int sockfd,numbytes; /* El servidor escuchara por sockfd */
@@ -65,12 +65,25 @@ int main() {
     socklen_t sin_size; /* Contendra el tamaño de la escructura sockaddr_in */
     int request;
     
-    /*-----Variables como cliente-----*/
-    //int sockfd2,numbytes;
-    //int newfd2;
-    //char buf[MAXDATASIZE]; /* Buffer donde se reciben los datos */
-    //struct hostent *he_agencia_b; /* Se utiliza para convertir el nombre del host a su dirección IP */
-    //struct sockaddr_in agengia_b_addr; /* dirección del server donde se conectara */
+    /*-----Variables como cliente-------------------------------*/
+    int sockfd2;
+    struct hostent *he; /* Se utiliza para convertir el nombre del host a su dirección IP */
+    struct sockaddr_in  agencia_b_addr; /* dirección del server donde se conectara */
+    char buf[500]; /* Buffer donde se reciben los datos */
+    /*Guarda la ip de la otra agencia*/
+    if (argc != 2){
+        fprintf(stderr,"Ingrese ./servidor ip \n");
+        exit(EXIT_FAILURE);
+    }
+    if ((he=gethostbyname(argv[1])) == NULL) { 
+        herror("gethostbyname");
+        exit(EXIT_FAILURE);
+    }
+    agencia_b_addr.sin_family = AF_INET;
+    agencia_b_addr.sin_port = htons(PORT_A_C);
+    agencia_b_addr.sin_addr =  *((struct in_addr *)he->h_addr);
+    bzero(&(agencia_b_addr.sin_zero), 8);
+    /*--------------------------------------------------------*/
     
     
   
@@ -128,6 +141,49 @@ int main() {
                             break;
                     case 6: informacion_dominio_vehiculo(newfd);
                             break;
+                 /*Casos donde el servidor se comporta como un cliente y debe comunicarse con la agencia b*/
+                    case 1:
+                    case 2: 
+                    case 3: //1,2 o 3.
+                            
+                            /*----se crea el socket-----*/
+                            if ((sockfd2 = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+                                perror("socket:");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            
+                            /* Intentamos conectarnos con el servidor */
+                            if (connect(sockfd2, (struct sockaddr *)&agencia_b_addr, sizeof(struct sockaddr)) == -1)
+                            {
+                                perror("connect");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                             /*--Enviamos numero de solicitud----*/
+                            if ((send(sockfd2,&request,sizeof(request),0))==-1){
+                                perror("send: ");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            /* Recibimos los datos del servidor */
+                            if ((numbytes=recv(sockfd2, buf, sizeof(buf), 0)) == -1)
+                            {
+                                perror("recv");
+                                exit(EXIT_FAILURE);
+                            }
+                            printf("Esperando respuesta del agente B\n");
+                            printf("Redirigiendo respuesta al cliente\n");
+                            /*Redirigimos la respuesta al cliente*/
+                            if(send(newfd,buf,sizeof(buf),0)==-1){
+                                perror("send: ");
+                                exit(EXIT_FAILURE);
+                            }
+                            close(sockfd2);
+                            break;
+                    default:
+                            printf("error");
+                            exit(1);
                 }
             
             }

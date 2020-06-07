@@ -7,13 +7,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/utsname.h>
+#include <netdb.h>
+
+
+
 
 #define MYPORT 14550 /*Nro de puerto donde se conectaran los clientes*/
 #define PORT_B_C 14551 /*Nro de puerto donde se conectaran como cliente al agente B*/
-#define PORT_B_S 14551 /*Nro de puerto donde se conectaran como servidor al agente B*/
+
+//#define PORT_B_S 14551 /*Nro de puerto donde se conectaran como servidor al agente B*/
 #define BACKLOG 10 /* Tamaño de la cola de conexiones recibidas */
-#define BYTESAENVIAR 2048
 
 void brindar_turno_licencia_matrimonio(int newfd){
     time_t tiempo;
@@ -56,8 +59,8 @@ void turno_inscripcion_bebe_nacido(int newfd){
     }
 }
 
-int main() {
-    
+int main(int argc, char *argv[]){
+        
     /*-----Variables como servidor-----*/
     int sockfd,numbytes; /* El servidor escuchara por sockfd */
     int newfd; /* las transferencias de datos se realizar mediante newfd */
@@ -67,13 +70,24 @@ int main() {
     int request;
     
     /*-----Variables como cliente-----*/
-    //int sockfd2,numbytes;
-    //int newfd2;
-    //char buf[MAXDATASIZE]; /* Buffer donde se reciben los datos */
-    //struct hostent *he_agencia_b; /* Se utiliza para convertir el nombre del host a su dirección IP */
-    //struct sockaddr_in agengia_b_addr; /* dirección del server donde se conectara */
-    
-    
+    int sockfd2;
+    struct hostent *he; /* Se utiliza para convertir el nombre del host a su dirección IP */
+    struct sockaddr_in  agencia_b_addr; /* dirección del server donde se conectara */
+    char buf[500]; /* Buffer donde se reciben los datos */
+    /*Guarda la ip de la otra agencia*/
+    if (argc != 2){
+        fprintf(stderr,"Ingrese ./servidor ip \n");
+        exit(EXIT_FAILURE);
+    }
+    if ((he=gethostbyname(argv[1])) == NULL) { 
+        herror("gethostbyname");
+        exit(EXIT_FAILURE);
+    }
+    agencia_b_addr.sin_family = AF_INET;
+    agencia_b_addr.sin_port = htons(PORT_B_C);
+    agencia_b_addr.sin_addr =  *((struct in_addr *)he->h_addr);
+    bzero(&(agencia_b_addr.sin_zero), 8);
+    /*--------------------------------------------*/
   
     /*----se crea el socket-----*/
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
@@ -135,17 +149,13 @@ int main() {
                     case 4:
                     case 5: 
                     case 6: //4,5 o 6.
-                             /*----se crea el socket-----*/
+                            
+                            /*----se crea el socket-----*/
                             if ((sockfd2 = socket(AF_INET, SOCK_STREAM, 0)) == -1){
                                 perror("socket:");
                                 exit(EXIT_FAILURE);
                             }
                             
-                            /* Establecemos agencia_b_addr con la dirección del server */
-                            agencia_b_addr.sin_family = AF_INET;
-                            agencia_b_addr.sin_port = htons(PORT_B);
-                            agencia_b_addr.sin_addr = *((struct in_addr *)he_agencia_b->h_addr);
-                            bzero(&(agencia_b_addr.sin_zero), 8);
                             
                             /* Intentamos conectarnos con el servidor */
                             if (connect(sockfd2, (struct sockaddr *)&agencia_b_addr, sizeof(struct sockaddr)) == -1)
@@ -161,7 +171,7 @@ int main() {
                             }
                             
                             /* Recibimos los datos del servidor */
-                            if ((numbytes=recv(sockfd2, buf, MAXDATASIZE, 0)) == -1)
+                            if ((numbytes=recv(sockfd2, buf, sizeof(buf), 0)) == -1)
                             {
                                 perror("recv");
                                 exit(EXIT_FAILURE);
@@ -169,10 +179,11 @@ int main() {
                             printf("Esperando respuesta del agente B\n");
                             printf("Redirigiendo respuesta al cliente\n");
                             /*Redirigimos la respuesta al cliente*/
-                            if(send(newfd,mensaje1,sizeof(mensaje1),0)==-1){
+                            if(send(newfd,buf,sizeof(buf),0)==-1){
                                 perror("send: ");
                                 exit(EXIT_FAILURE);
                             }
+                            close(sockfd2);
                             break;
                     default:
                             printf("error");
