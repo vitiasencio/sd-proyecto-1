@@ -10,6 +10,7 @@
 #include <sys/time.h>
 
 #define PORT 14550 /* El puerto donde se conectara */
+#define PORT_B 14551 /* Puerto por donde escucha la agencia B*/
 #define MAXDATASIZE 2048
 #define TOPEPRUEBAS 10
 
@@ -50,8 +51,12 @@ int main(int argc, char *argv[])
     /* Intentamos conectarnos con el servidor */
     if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1)
     {
-        perror("connect");
-        exit(EXIT_FAILURE);
+        their_addr.sin_port = htons(PORT_B);
+        if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1)
+        {
+            perror("connect");
+            exit(EXIT_FAILURE);
+        }
     }
     
     int seguiroperando = 1;

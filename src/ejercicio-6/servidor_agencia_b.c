@@ -11,7 +11,7 @@
 #include <netdb.h>
 
 #define MYPORT 14551 /*Nro de puerto donde se conectaran los clientes*/
-#define PORT_A_C 14551 /*Nro de puerto donde se conectaran como cliente al agente A*/
+#define PORT_A_C 14550 /*Nro de puerto donde se conectaran como cliente al agente A*/
 #define BACKLOG 10 /* Tamaño de la cola de conexiones recibidas */
 
 void brindar_turno_patentar_auto(int newfd){
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
     /*-----Variables como cliente-------------------------------*/
     int sockfd2;
     struct hostent *he; /* Se utiliza para convertir el nombre del host a su dirección IP */
-    struct sockaddr_in  agencia_b_addr; /* dirección del server donde se conectara */
+    struct sockaddr_in  agencia_a_addr; /* dirección del server donde se conectara */
     char buf[500]; /* Buffer donde se reciben los datos */
     /*Guarda la ip de la otra agencia*/
     if (argc != 2){
@@ -79,10 +79,10 @@ int main(int argc, char *argv[]){
         herror("gethostbyname");
         exit(EXIT_FAILURE);
     }
-    agencia_b_addr.sin_family = AF_INET;
-    agencia_b_addr.sin_port = htons(PORT_A_C);
-    agencia_b_addr.sin_addr =  *((struct in_addr *)he->h_addr);
-    bzero(&(agencia_b_addr.sin_zero), 8);
+    agencia_a_addr.sin_family = AF_INET;
+    agencia_a_addr.sin_port = htons(PORT_A_C);
+    agencia_a_addr.sin_addr =  *((struct in_addr *)he->h_addr);
+    bzero(&(agencia_a_addr.sin_zero), 8);
     /*--------------------------------------------------------*/
     
     
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]){
                             
                             
                             /* Intentamos conectarnos con el servidor */
-                            if (connect(sockfd2, (struct sockaddr *)&agencia_b_addr, sizeof(struct sockaddr)) == -1)
+                            if (connect(sockfd2, (struct sockaddr *)&agencia_a_addr, sizeof(struct sockaddr)) == -1)
                             {
                                 perror("connect");
                                 exit(EXIT_FAILURE);
