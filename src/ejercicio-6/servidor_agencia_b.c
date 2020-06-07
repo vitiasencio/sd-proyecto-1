@@ -114,27 +114,24 @@ int main() {
         
         if (!fork())
         { /* Comienza el proceso hijo*/ 
+            while(1){
+                /* Recibimos la solicitud del cliente*/
+                if((numbytes = recv(newfd,&request,sizeof(request),0))==-1){
+                    perror("recv: ");
+                    exit(EXIT_FAILURE);
+                }
+                switch(request){
+                
+                    case 4: brindar_turno_patentar_auto(newfd);
+                            break;
+                    case 5: brindar_turno_transferencia_vehiculo(newfd);
+                            break;
+                    case 6: informacion_dominio_vehiculo(newfd);
+                            break;
+                }
             
-            /* Recibimos la solicitud del cliente*/
-            if((numbytes = recv(newfd,&request,sizeof(request),0))==-1){
-                perror("recv: ");
-                exit(EXIT_FAILURE);
             }
-            switch(request){
-            
-                case 4: brindar_turno_patentar_auto(newfd);
-                        break;
-                case 5: brindar_turno_transferencia_vehiculo(newfd);
-                        break;
-                case 6: informacion_dominio_vehiculo(newfd);
-                        break;
-            }
-            
-            
-           // char message[] = "hola";
-            /*enviamos los datos mediante newfd */
-            //if (send(newfd,message,sizeof(message), 0) == -1)
-             //   perror("send");
+           
             close(newfd);
             exit(0);
         }

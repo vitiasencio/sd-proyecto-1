@@ -10,7 +10,8 @@
 #include <sys/utsname.h>
 
 #define MYPORT 14550 /*Nro de puerto donde se conectaran los clientes*/
-#define PAR_PORT 14551 /*Nro de puerto donde se conectaran como cliente el agente B*/
+#define PORT_B_C 14551 /*Nro de puerto donde se conectaran como cliente al agente B*/
+#define PORT_B_S 14551 /*Nro de puerto donde se conectaran como servidor al agente B*/
 #define BACKLOG 10 /* Tamaño de la cola de conexiones recibidas */
 #define BYTESAENVIAR 2048
 
@@ -114,27 +115,71 @@ int main() {
         
         if (!fork())
         { /* Comienza el proceso hijo*/ 
-            
-            /* Recibimos la solicitud del cliente*/
-            if((numbytes = recv(newfd,&request,sizeof(request),0))==-1){
-                perror("recv: ");
-                exit(EXIT_FAILURE);
+            while(1){
+                /* Recibimos la solicitud del cliente*/
+                printf("el hijo esta atendiendo \n");
+                if((numbytes = recv(newfd,&request,sizeof(request),0))==-1){
+                    perror("recv: ");
+                    exit(EXIT_FAILURE);
+                }
+                
+                switch(request){
+                
+                    case 1: brindar_turno_licencia_matrimonio(newfd);
+                            break;
+                    case 2: informacion_partida_nacimiento(newfd);
+                            break;
+                    case 3: turno_inscripcion_bebe_nacido(newfd);
+                            break;
+                    /*Casos donde el servidor se comporta como un cliente y debe comunicarse con la agencia b*/
+                    case 4:
+                    case 5: 
+                    case 6: //4,5 o 6.
+                             /*----se crea el socket-----*/
+                            if ((sockfd2 = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+                                perror("socket:");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            /* Establecemos agencia_b_addr con la dirección del server */
+                            agencia_b_addr.sin_family = AF_INET;
+                            agencia_b_addr.sin_port = htons(PORT_B);
+                            agencia_b_addr.sin_addr = *((struct in_addr *)he_agencia_b->h_addr);
+                            bzero(&(agencia_b_addr.sin_zero), 8);
+                            
+                            /* Intentamos conectarnos con el servidor */
+                            if (connect(sockfd2, (struct sockaddr *)&agencia_b_addr, sizeof(struct sockaddr)) == -1)
+                            {
+                                perror("connect");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                             /*--Enviamos numero de solicitud----*/
+                            if ((send(sockfd2,&request,sizeof(request),0))==-1){
+                                perror("send: ");
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            /* Recibimos los datos del servidor */
+                            if ((numbytes=recv(sockfd2, buf, MAXDATASIZE, 0)) == -1)
+                            {
+                                perror("recv");
+                                exit(EXIT_FAILURE);
+                            }
+                            printf("Esperando respuesta del agente B\n");
+                            printf("Redirigiendo respuesta al cliente\n");
+                            /*Redirigimos la respuesta al cliente*/
+                            if(send(newfd,mensaje1,sizeof(mensaje1),0)==-1){
+                                perror("send: ");
+                                exit(EXIT_FAILURE);
+                            }
+                            break;
+                    default:
+                            printf("error");
+                            exit(1);
+                }
             }
-            switch(request){
             
-                case 1: brindar_turno_licencia_matrimonio(newfd);
-                        break;
-                case 2: informacion_partida_nacimiento(newfd);
-                        break;
-                case 3: turno_inscripcion_bebe_nacido(newfd);
-                        break;
-            }
-            
-            
-           // char message[] = "hola";
-            /*enviamos los datos mediante newfd */
-            //if (send(newfd,message,sizeof(message), 0) == -1)
-             //   perror("send");
             close(newfd);
             exit(0);
         }

@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     a su dirección IP */
     struct sockaddr_in their_addr; /* dirección del server donde se
     conectara */
-    if (argc != 3){
-        fprintf(stderr,"Ingrese ./cliente ip p\n Donde p puede ser: \n 1: Brindar turnos para sacar licencia de matrimonio \n 2: Informacion sobre la partida de nacimiento\n 3: Turno para inscripcion de un bebe recien nacido\n 4: Turno para patentar el auto\n 5: Turno para la transferencia de un vehiculo\n 6: Informacion sobre el dominio de un vehiculo\n");
+    if (argc != 2){
+        fprintf(stderr,"Ingrese ./cliente ip \n");
         exit(EXIT_FAILURE);
     }
     if ((he=gethostbyname(argv[1])) == NULL) { 
@@ -48,29 +48,54 @@ int main(int argc, char *argv[])
     bzero(&(their_addr.sin_zero), 8);
     
     /* Intentamos conectarnos con el servidor */
-    if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct
-    sockaddr)) == -1)
+    if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1)
     {
         perror("connect");
         exit(EXIT_FAILURE);
     }
     
-    /*--Enviamos numero de solicitud----*/
-    request = atoi(argv[2]);
-    if ((send(sockfd,&request,sizeof(request),0))==-1){
-        perror("send: ");
-        exit(EXIT_FAILURE);
-    }
-    /* Recibimos los datos del servidor */
-    if ((numbytes=recv(sockfd, buf, MAXDATASIZE, 0)) == -1)
-    {
-        perror("recv");
-        exit(EXIT_FAILURE);
-    }
+    int seguiroperando = 1;
+    int continuo=1;
+    while(seguiroperando){
+        printf("Ingrese: \n 1: Brindar turnos para sacar licencia de matrimonio \n 2: Informacion sobre la partida de nacimiento\n 3: Turno para inscripcion de un bebe recien nacido\n 4: Turno para patentar el auto\n 5: Turno para la transferencia de un vehiculo\n 6: Informacion sobre el dominio de un vehiculo\n\n");
+        scanf("%d",&request);
+        printf("\n");
+        
+        /*--Enviamos numero de solicitud----*/
+        if ((send(sockfd,&request,sizeof(request),0))==-1){
+            perror("send: ");
+            exit(EXIT_FAILURE);
+        }
+        /* Recibimos los datos del servidor */
+        if ((numbytes=recv(sockfd, buf, MAXDATASIZE, 0)) == -1)
+        {
+            perror("recv");
+            exit(EXIT_FAILURE);
+        }
 
-    /* Visualizamos lo recibido */
-    buf[numbytes] = '\0';
-    printf(buf);
+        /* Visualizamos lo recibido */
+        buf[numbytes] = '\0';
+        printf(buf);
+        printf("\n");
+        
+        printf("Desea continuar operando en el sistema? \n");
+        printf("1. SI \n");
+        printf("2. NO \n");
+        scanf("%d",&continuo);
+        printf("\n");
+        switch(continuo){
+            case 1: 
+                seguiroperando = 1;
+                break;
+            case 2: 
+                seguiroperando = 0;
+                break;
+            default:
+                seguiroperando = 0;
+                break;
+        }
+        
+    }
     /* Devolvemos recursos al sistema */
     close(sockfd);
     return 0;
