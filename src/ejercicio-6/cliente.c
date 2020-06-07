@@ -64,6 +64,10 @@ int main(int argc, char *argv[])
     while(seguiroperando){
         printf("Ingrese: \n 1: Brindar turnos para sacar licencia de matrimonio \n 2: Informacion sobre la partida de nacimiento\n 3: Turno para inscripcion de un bebe recien nacido\n 4: Turno para patentar el auto\n 5: Turno para la transferencia de un vehiculo\n 6: Informacion sobre el dominio de un vehiculo\n\n");
         scanf("%d",&request);
+        if(request!=1 && request!=2 && request!=3 && request!=4 && request!=5 && request!=6){
+            printf("Ingreso incorrecto \n");
+            exit(EXIT_FAILURE);
+        }
         printf("\n");
         
         /*--Enviamos numero de solicitud----*/

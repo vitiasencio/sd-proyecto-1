@@ -131,7 +131,6 @@ int main(int argc, char *argv[]){
         { /* Comienza el proceso hijo*/ 
             while(1){
                 /* Recibimos la solicitud del cliente*/
-                printf("el hijo esta atendiendo \n");
                 if((numbytes = recv(newfd,&request,sizeof(request),0))==-1){
                     perror("recv: ");
                     exit(EXIT_FAILURE);

@@ -24,7 +24,6 @@ void brindar_turno_patentar_auto(int newfd){
     strcat(mensaje1,asctime(result));
     strcat(mensaje1,"\n");
     strcat(mensaje1,"Recuerde traer: \n - DNI\n - Constacia de CUIL, CUIT o CDI \n - Documentacion obtenida a traves de la agencia\n");
-    printf("%s",mensaje1);
 
     if(send(newfd,mensaje1,sizeof(mensaje1),0)==-1){
         perror("send: ");
