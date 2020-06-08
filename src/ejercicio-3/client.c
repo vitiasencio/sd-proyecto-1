@@ -40,7 +40,7 @@ response * add_arr_1_local(request *req){
 	int i;
 	response *res = (struct response *) malloc(sizeof(struct response));
 	
-	for(i=0; i<512;i++){
+	for(i=0; i<100;i++){
 		res->arr[i] = req->arr1[i] + req->arr2[i];
 	}
 	
