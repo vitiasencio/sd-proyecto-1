@@ -3,40 +3,18 @@
 #include <unistd.h>
 #include <sys/msg.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/ipc.h>
 #include <time.h>
+
 #include "protocol.h"
 
-/*#define TAMCOLA sizeof(struct mensaje)
-#define TAMCOLARES sizeof(struct mensaje_res)
-
-#define PATHREQ "/tmp"
-#define IDREQ 'S'
-
-#define PATHRES "/usr"
-#define IDRES 'T'
-
-struct mensaje {
-	int op_type;
-	int cant_operands;
-	int op1;
-	int op2;
-	int op3;
-	int op4;
-};
-
-struct mensaje_res{
-	int op_type;
-	int float_res;
-	char hexa_res[20];
-}
-
-
-typedef struct mensaje my_msgbuf;
-typedef struct mensaje_res my_msgbuf_res;
-*/
 int req_q_id;
 int res_q_id;
+
+/* Variables para controlar el tiempo. */
+struct timeval start, end;
+unsigned long accum;
 
 void create_req_queue();
 void create_res_queue();
@@ -47,6 +25,33 @@ void handle_addition();
 void handle_substraction();
 void handle_product();
 void handle_division();
+void handle_dectobin();
+void handle_bintohexa();
+
+void record_init_time(){
+
+	/* Registro tiempo inicial */
+	if(gettimeofday(&start,NULL)<0){
+		perror("Error en start");
+	}
+	
+}
+
+void record_end_time(){
+
+	/* Registro tiempo final */
+	if(gettimeofday(&end,NULL)<0){
+		perror("Error en end");
+	}
+
+	/* Obtengo el tiempo transcurrido en nanosegundos */
+	if(end.tv_sec==start.tv_sec){
+		accum = ( end.tv_sec - start.tv_sec ) * MILLION + ( end.tv_usec - start.tv_usec ); 
+	}else{
+		accum = ( end.tv_sec - start.tv_sec )* MILLION + (MILLION - start.tv_usec) + end.tv_usec ; 
+	}
+
+}
 
 int main() {
 	
@@ -55,20 +60,21 @@ int main() {
 	
 	pid_t pid;
 	
+	/*
+	*	Creo un proceso con la imagen ejecutable del "server"
+	*	donde se encuentran todos los procedimientos necesarios.
+	*/
 	if( (pid = fork() ) == 0 ){
-		
 		/* Estoy en el hijo */
 		if( execl("./server",NULL) < 0 ){
 			perror("Error en execl");
 			exit(1);
 		}
-		
 	}
-	
 	
 	print_header();
 	
-	int op=-1;
+	int op;
 	
 	char retry = 'x';
 	
@@ -79,25 +85,21 @@ int main() {
 		
 		switch(op){
 			case 1:
-				printf("decimal binario\n");
+				handle_dectobin();
 				break;
 			case 2:
-				printf("binario hexadecimal\n");
+				handle_bintohexa();
 				break;
 			case 3:
-				//printf("suma\n");
 				handle_addition();
 				break;
 			case 4:
-				//printf("resta\n");
 				handle_substraction();
 				break;
 			case 5:
-				//printf("multiplicar\n");
 				handle_product();
 				break;
 			case 6:
-				//printf("dividir\n");
 				handle_division();
 				break;
 			case 7:
@@ -107,9 +109,11 @@ int main() {
 				break;
 		}
 		
+		int i=0;
 		while(retry!='y' && retry!='n'){
-			printf("Desea realizar otra operación? (y/n): ");
-			scanf("%c",&retry);
+			printf("\nDesea realizar otra operación? (y/n): ");
+			fflush(stdin);
+			scanf(" %c",&retry);
 		}
 
 		if(retry=='n'){
@@ -122,19 +126,89 @@ int main() {
 	
 	
 	/**
-	*	Elimino la cola de mensajes
+	*	Elimino las colas de mensajes
 	*/
 	
 	if( msgctl(req_q_id, IPC_RMID, NULL) < 0 ){
 		perror("No se pudo eliminar la cola");
-		exit(-1);
+		exit(1);
 	}
 	if( msgctl(res_q_id, IPC_RMID, NULL) < 0 ){
 		perror("No se pudo eliminar la cola");
-		exit(-1);
+		exit(1);
 	}
 	
 	exit(0);
+}
+
+void handle_dectobin(){
+	
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 0;
+	long decbin;
+	
+	printf("Ingrese un numero positivo en decimal: ");
+	scanf("%ld",&decbin);
+	
+	buf.decbin = decbin;
+	buf.op_type = 1;
+	buf.cant_operands = 1;
+
+	record_init_time();
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		printf("Resultado en binario: %s\n", buf_rcv.conv_res);
+	}
+	
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
+	
+}
+
+void handle_bintohexa(){
+	
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 0;
+	long decbin;
+	
+	printf("Ingrese un numero en binario: ");
+	scanf("%ld",&decbin);
+	
+	buf.decbin = decbin;
+	buf.op_type = 2;
+	buf.cant_operands = 1;
+
+	record_init_time();
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		printf("Resultado en hexadecimal: %s\n", buf_rcv.conv_res);
+	}
+	
+	
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
 }
 
 void handle_addition(){
@@ -167,6 +241,8 @@ void handle_addition(){
 	buf.op_type = 3;
 	buf.cant_operands = cant_op;
 
+	record_init_time();
+
 	/* Envio la request */
 	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
 		perror("Error al enviar");
@@ -184,6 +260,11 @@ void handle_addition(){
 		}
 		printf("Resultado de la suma: %.2f\n", res);
 	}
+
+	
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
 
 }
 
@@ -217,6 +298,8 @@ void handle_substraction(){
 	buf.op_type = 4;
 	buf.cant_operands = cant_op;
 
+	record_init_time();
+
 	/* Envio la request */
 	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
 		perror("Error al enviar");
@@ -234,6 +317,10 @@ void handle_substraction(){
 		}
 		printf("Resultado de la resta: %.2f\n", res);
 	}
+
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
 
 }
 
@@ -258,6 +345,8 @@ void handle_product(){
 	buf.op_type = 5;
 	buf.cant_operands = cant_op;
 
+	record_init_time();
+
 	/* Envio la request */
 	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
 		perror("Error al enviar");
@@ -275,6 +364,10 @@ void handle_product(){
 		}
 		printf("Resultado del producto: %.2f\n", res);
 	}
+	
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
 	
 }
 
@@ -306,6 +399,8 @@ void handle_division(){
 	buf.op_type = 6;
 	buf.cant_operands = cant_op;
 
+	record_init_time();
+
 	/* Envio la request */
 	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
 		perror("Error al enviar");
@@ -321,8 +416,12 @@ void handle_division(){
 		}else{
 			res = buf_rcv.float_res;
 		}
-		printf("Resultado del producto: %.2f\n", res);
+		printf("Resultado de la división: %.2f\n", res);
 	}
+	
+	record_end_time();
+	
+	printf("Tiempo de ejecución: %lu microsegundos.\n",accum);
 	
 }
 
@@ -391,7 +490,7 @@ void print_header(){
 }
 
 void print_options(){
-	printf("¿Qué desea hacer?\n");
+	printf("\n¿Qué desea hacer?\n");
 	printf("	1. Convertir un número de decimal a binario.\n");
 	printf("	2. Convertir un número binario a hexadecimal.\n");
 	printf("	3. Sumar números (hasta 4 operandos).\n");
