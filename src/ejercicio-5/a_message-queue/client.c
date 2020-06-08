@@ -5,8 +5,10 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <time.h>
+#include "protocol.h"
 
-#define TAMCOLA sizeof(struct mensaje)
+/*#define TAMCOLA sizeof(struct mensaje)
+#define TAMCOLARES sizeof(struct mensaje_res)
 
 #define PATHREQ "/tmp"
 #define IDREQ 'S'
@@ -23,7 +25,16 @@ struct mensaje {
 	int op4;
 };
 
+struct mensaje_res{
+	int op_type;
+	int number_res;
+	char hexa_res[20];
+}
+
+
 typedef struct mensaje my_msgbuf;
+typedef struct mensaje_res my_msgbuf_res;
+*/
 int req_q_id;
 int res_q_id;
 
@@ -35,6 +46,53 @@ void print_header();
 
 void print_options();
 
+void terminate_server();
+
+void handle_addition();
+
+void handle_substraction(){
+
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 0;
+	int i;
+	int aux[4];
+	
+	printf("Ingrese el número de operandos: ");
+	scanf("%i",&cant_op);
+	
+	while( (cant_op<2) || (cant_op>4) ){
+		printf("Ingrese un número entre 2 y 4: ");
+		scanf("%i",&cant_op);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		printf("Ingrese operando: ");
+		scanf("%i",&aux[i]);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		buf.operands[i] = aux[i];
+	}
+
+	
+	buf.op_type = 4;
+	buf.cant_operands = cant_op;
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		printf("Resultado de la resta: %i\n", buf_rcv.number_res);
+	}
+
+}
 
 int main() {
 	
@@ -58,7 +116,6 @@ int main() {
 	int op=-1;
 	
 	char retry = 'x';
-	my_msgbuf buf;
 	
 	while(retry!='n'){
 		fflush(stdin);
@@ -73,10 +130,12 @@ int main() {
 				printf("binario hexadecimal\n");
 				break;
 			case 3:
-				printf("suma\n");
+				//printf("suma\n");
+				handle_addition();
 				break;
 			case 4:
-				printf("resta\n");
+				//printf("resta\n");
+				handle_substraction();
 				break;
 			case 5:
 				printf("multiplicar\n");
@@ -90,43 +149,20 @@ int main() {
 			default:
 				break;
 		}
-
-		buf.op_type = op;
-		if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
-			perror("Error al enviar");
-			//exit(-1);
-		}
 		
 		while(retry!='y' && retry!='n'){
 			printf("Desea realizar otra operación? (y/n): ");
 			scanf("%c",&retry);
 		}
 
-		if(retry=='y'){
+		if(retry=='n'){
+			terminate_server();
+		}else if( retry=='y' ){
 			retry='x';
 		}
 		
 	}
 	
-	
-	/**
-	*	Escribo en la cola
-	*/
-	
-	
-	
-	
-	/**
-	*	Leo de la cola
-	*/
-	
-//	my_msgbuf buf_rcv;
-	
-//	if( msgrcv(req_q_id, &buf_rcv, TAMCOLA, 1, 0) < 0 ){
-//		perror("Error al recibir");
-//	}else{
-//		printf("Mensaje recibido, type: %lu\n", buf_rcv.type);
-//	}
 	
 	/**
 	*	Elimino la cola de mensajes
@@ -142,6 +178,50 @@ int main() {
 	}
 	
 	exit(0);
+}
+
+void handle_addition(){
+
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 0;
+	int i;
+	int aux[4];
+	
+	printf("Ingrese el número de operandos: ");
+	scanf("%i",&cant_op);
+	
+	while( (cant_op<2) || (cant_op>4) ){
+		printf("Ingrese un número entre 2 y 4: ");
+		scanf("%i",&cant_op);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		printf("Ingrese operando: ");
+		scanf("%i",&aux[i]);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		buf.operands[i] = aux[i];
+	}
+
+	
+	buf.op_type = 3;
+	buf.cant_operands = cant_op;
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		printf("Resultado de la suma: %i\n", buf_rcv.number_res);
+	}
+
 }
 
 void create_res_queue(){
@@ -190,6 +270,16 @@ void create_req_queue(){
 		exit(1);
 	}
 
+}
+
+void terminate_server(){
+
+	my_msgbuf buf;
+	buf.op_type = 7;
+	
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar terminate");
+	}
 }
 
 void print_header(){
