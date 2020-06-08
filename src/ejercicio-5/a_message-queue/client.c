@@ -27,7 +27,7 @@ struct mensaje {
 
 struct mensaje_res{
 	int op_type;
-	int number_res;
+	int float_res;
 	char hexa_res[20];
 }
 
@@ -39,65 +39,20 @@ int req_q_id;
 int res_q_id;
 
 void create_req_queue();
-
 void create_res_queue();
-
 void print_header();
-
 void print_options();
-
 void terminate_server();
-
 void handle_addition();
-
-void handle_substraction(){
-
-	my_msgbuf buf;
-	my_msgbuf_res buf_rcv;
-
-	int cant_op = 0;
-	int i;
-	int aux[4];
-	
-	printf("Ingrese el número de operandos: ");
-	scanf("%i",&cant_op);
-	
-	while( (cant_op<2) || (cant_op>4) ){
-		printf("Ingrese un número entre 2 y 4: ");
-		scanf("%i",&cant_op);
-	}
-	
-	for(i=0;i<cant_op;i++){
-		printf("Ingrese operando: ");
-		scanf("%i",&aux[i]);
-	}
-	
-	for(i=0;i<cant_op;i++){
-		buf.operands[i] = aux[i];
-	}
-
-	
-	buf.op_type = 4;
-	buf.cant_operands = cant_op;
-
-	/* Envio la request */
-	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
-		perror("Error al enviar");
-	}
-	
-	/* Espero por la respuesta */
-	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
-		perror("Error al recibir");
-	}else{
-		printf("Resultado de la resta: %i\n", buf_rcv.number_res);
-	}
-
-}
+void handle_substraction();
+void handle_product();
+void handle_division();
 
 int main() {
 	
 	create_req_queue();
 	create_res_queue();
+	
 	pid_t pid;
 	
 	if( (pid = fork() ) == 0 ){
@@ -138,10 +93,12 @@ int main() {
 				handle_substraction();
 				break;
 			case 5:
-				printf("multiplicar\n");
+				//printf("multiplicar\n");
+				handle_product();
 				break;
 			case 6:
-				printf("dividir\n");
+				//printf("dividir\n");
+				handle_division();
 				break;
 			case 7:
 				retry='n';
@@ -187,7 +144,7 @@ void handle_addition(){
 
 	int cant_op = 0;
 	int i;
-	int aux[4];
+	float aux[4];
 	
 	printf("Ingrese el número de operandos: ");
 	scanf("%i",&cant_op);
@@ -199,7 +156,7 @@ void handle_addition(){
 	
 	for(i=0;i<cant_op;i++){
 		printf("Ingrese operando: ");
-		scanf("%i",&aux[i]);
+		scanf("%f",&aux[i]);
 	}
 	
 	for(i=0;i<cant_op;i++){
@@ -219,9 +176,154 @@ void handle_addition(){
 	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
 		perror("Error al recibir");
 	}else{
-		printf("Resultado de la suma: %i\n", buf_rcv.number_res);
+		float res;
+		if(buf_rcv.is_neg){
+			res = buf_rcv.float_res*(-1);
+		}else{
+			res = buf_rcv.float_res;
+		}
+		printf("Resultado de la suma: %.2f\n", res);
 	}
 
+}
+
+void handle_substraction(){
+
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 0;
+	int i;
+	float aux[4];
+	
+	printf("Ingrese el número de operandos: ");
+	scanf("%i",&cant_op);
+	
+	while( (cant_op<2) || (cant_op>4) ){
+		printf("Ingrese un número entre 2 y 4: ");
+		scanf("%i",&cant_op);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		printf("Ingrese operando: ");
+		scanf("%f",&aux[i]);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		buf.operands[i] = aux[i];
+	}
+
+	
+	buf.op_type = 4;
+	buf.cant_operands = cant_op;
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		float res;
+		if(buf_rcv.is_neg){
+			res = buf_rcv.float_res*(-1);
+		}else{
+			res = buf_rcv.float_res;
+		}
+		printf("Resultado de la resta: %.2f\n", res);
+	}
+
+}
+
+void handle_product(){
+
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 2;
+	int i;
+	float aux[2];
+	
+	for(i=0;i<cant_op;i++){
+		printf("Ingrese operando: ");
+		scanf("%f",&aux[i]);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		buf.operands[i] = aux[i];
+	}
+
+	buf.op_type = 5;
+	buf.cant_operands = cant_op;
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		float res;
+		if(buf_rcv.is_neg){
+			res = buf_rcv.float_res*(-1);
+		}else{
+			res = buf_rcv.float_res;
+		}
+		printf("Resultado del producto: %.2f\n", res);
+	}
+	
+}
+
+void handle_division(){
+
+	my_msgbuf buf;
+	my_msgbuf_res buf_rcv;
+
+	int cant_op = 2;
+	int i;
+	float aux[2];
+	
+	printf("Ingrese dividendo: ");
+	scanf("%f",&aux[0]);
+	
+	printf("Ingrese divisor: ");
+	scanf("%f",&aux[1]);
+
+	while(aux[1]==0){
+		printf("El divisor no puede ser cero.\n");
+		printf("Ingrese divisor: ");
+		scanf("%f",&aux[1]);
+	}
+	
+	for(i=0;i<cant_op;i++){
+		buf.operands[i] = aux[i];
+	}
+
+	buf.op_type = 6;
+	buf.cant_operands = cant_op;
+
+	/* Envio la request */
+	if( msgsnd(req_q_id, &buf, TAMCOLA, 0) < 0 ){
+		perror("Error al enviar");
+	}
+	
+	/* Espero por la respuesta */
+	if( msgrcv(res_q_id, &buf_rcv, TAMCOLARES, 0, 0) < 0 ){
+		perror("Error al recibir");
+	}else{
+		float res;
+		if(buf_rcv.is_neg){
+			res = buf_rcv.float_res*(-1);
+		}else{
+			res = buf_rcv.float_res;
+		}
+		printf("Resultado del producto: %.2f\n", res);
+	}
+	
 }
 
 void create_res_queue(){

@@ -10,12 +10,13 @@
 struct mensaje {
 	int op_type;
 	int cant_operands;
-	int operands[4];
+	float operands[4];
 };
 
 struct mensaje_res{
 	int op_type;
-	int number_res;
+	int is_neg;
+	float float_res;
 	char hexa_res[20];
 };
 

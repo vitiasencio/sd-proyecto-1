@@ -10,29 +10,11 @@ int req_q_id;
 int res_q_id;
 
 void create_req_queue();
-
 void create_res_queue();
-
 void handle_addition(my_msgbuf * buf);
-
-void handle_substraction(my_msgbuf * buf){
-	
-	int i;
-	int res = buf->operands[0];
-	
-	for(i=1; i<buf->cant_operands; i++){
-		res-=buf->operands[i];
-	}
-	
-	my_msgbuf_res buf_res;
-	buf_res.op_type = buf->op_type;
-	buf_res.number_res = res;
-	
-	
-	if( msgsnd(res_q_id, &buf_res, TAMCOLARES, 0) < 0 ){
-		perror("Error al enviar server");
-	}
-}
+void handle_substraction(my_msgbuf * buf);
+void handle_product(my_msgbuf * buf);
+void handle_division(my_msgbuf * buf);
 
 int main(int argc, char *argv[]) {
 	
@@ -64,6 +46,12 @@ int main(int argc, char *argv[]) {
 			case 4:
 				handle_substraction(&buf_rcv);
 				break;
+			case 5:
+				handle_product(&buf_rcv);
+				break;
+			case 6:
+				handle_division(&buf_rcv);
+				break;
 			default:
 				break;
 		
@@ -78,16 +66,103 @@ int main(int argc, char *argv[]) {
 void handle_addition(my_msgbuf * buf){
 	
 	int i;
-	int res = 0;
+	float res = 0;
 	
 	for(i=0; i<buf->cant_operands; i++){
+		printf("operando %i: %f\n",i,buf->operands[i]);
 		res+=buf->operands[i];
 	}
 	
 	my_msgbuf_res buf_res;
 	buf_res.op_type = buf->op_type;
-	buf_res.number_res = res;
 	
+	if(res<0){
+		buf_res.is_neg = 1;
+		buf_res.float_res = res*(-1);	
+	}else{
+		buf_res.is_neg = 0;
+		buf_res.float_res = res;
+	}
+	
+	if( msgsnd(res_q_id, &buf_res, TAMCOLARES, 0) < 0 ){
+		perror("Error al enviar server");
+	}
+}
+
+void handle_substraction(my_msgbuf * buf){
+	
+	int i;
+	float res = buf->operands[0];
+	
+	for(i=1; i<buf->cant_operands; i++){
+		res-=buf->operands[i];
+	}
+	
+	my_msgbuf_res buf_res;
+	buf_res.op_type = buf->op_type;
+	
+	if(res<0){
+		buf_res.is_neg = 1;
+		buf_res.float_res = res*(-1);	
+	}else{
+		buf_res.is_neg = 0;
+		buf_res.float_res = res;
+	}
+	
+	
+	if( msgsnd(res_q_id, &buf_res, TAMCOLARES, 0) < 0 ){
+		perror("Error al enviar server");
+	}
+}
+
+void handle_product(my_msgbuf * buf){
+	
+	int i;
+	float res = buf->operands[0];
+	
+	for(i=1; i<buf->cant_operands; i++){
+		res*=buf->operands[i];
+	}
+	
+	my_msgbuf_res buf_res;
+	buf_res.op_type = buf->op_type;
+	
+	if(res<0){
+		buf_res.is_neg = 1;
+		buf_res.float_res = res*(-1);	
+	}else{
+		buf_res.is_neg = 0;
+		buf_res.float_res = res;
+	}
+	
+	printf("resultado: %i\n",buf_res.float_res);
+	
+	if( msgsnd(res_q_id, &buf_res, TAMCOLARES, 0) < 0 ){
+		perror("Error al enviar server");
+	}
+}
+
+void handle_division(my_msgbuf * buf){
+	
+	int i;
+	float res = buf->operands[0];
+	
+	for(i=1; i<buf->cant_operands; i++){
+		res/=buf->operands[i];
+	}
+	
+	my_msgbuf_res buf_res;
+	buf_res.op_type = buf->op_type;
+	
+	if(res<0){
+		buf_res.is_neg = 1;
+		buf_res.float_res = res*(-1);	
+	}else{
+		buf_res.is_neg = 0;
+		buf_res.float_res = res;
+	}
+	
+	printf("resultado: %i\n",buf_res.float_res);
 	
 	if( msgsnd(res_q_id, &buf_res, TAMCOLARES, 0) < 0 ){
 		perror("Error al enviar server");
