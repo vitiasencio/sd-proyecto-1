@@ -32,6 +32,8 @@ int main (int argc, char *argv[]){
 		exit (1);
 	}
 
+	print_header();
+
 	char *host;
 	host = argv[1];
 	
